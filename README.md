@@ -1,6 +1,8 @@
 # FrameFlow
 
-Unified data transformation framework for Polars and PySpark with JSON-based pipeline orchestration.
+Unified data transformation framework for Polars lazyframes and PySpark with JSON-based pipeline orchestration. This enables interoperability and ease of migration as the same JSON pipeline config to be used in Python as well as PySpark jobs.
+
+In addition, data transformations are defined via JSON configs instead of being hardcoded, thus ensuring consistency in data transformations and insulating code from dataset / schema changes (as JSON configs just need to be updated and no code needs to be rewritten).
 
 ## Features
 
@@ -162,4 +164,3 @@ Full documentation available at: https://github.com/schen18/frameflow
 ## License
 
 MIT License
-'''
