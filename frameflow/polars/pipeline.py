@@ -4,8 +4,8 @@ FrameFlow Polars Pipeline Orchestrator - JSON-driven data transformation wrapper
 This module enables declarative data transformations using JSON specifications.
 Define your entire data pipeline in JSON and execute it programmatically.
 
-Author: Claude
-Version: 1.1.0
+Author: Stephen Chen
+Version: 1.5.0
 """
 
 import json
@@ -143,6 +143,13 @@ class PolarsPipeline:
         """Load input data based on specification."""
         input_config = self.spec['input']
         
+        # Check if input is a DataFrame/LazyFrame object
+        if isinstance(input_config, (pl.DataFrame, pl.LazyFrame)):
+            # Convert DataFrame to LazyFrame if needed
+            if isinstance(input_config, pl.DataFrame):
+                return input_config.lazy()
+            return input_config
+        
         if isinstance(input_config, str):
             # Simple path string - infer format from extension
             path = input_config
@@ -172,7 +179,7 @@ class PolarsPipeline:
                 raise ValueError(f"Unsupported format: {format_type}")
         
         else:
-            raise ValueError("'input' must be a string path or dict configuration")
+            raise ValueError("'input' must be a string path, dict configuration, or DataFrame/LazyFrame")
     
     def _infer_format(self, path: str) -> str:
         """Infer file format from path extension."""

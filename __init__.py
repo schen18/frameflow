@@ -14,7 +14,7 @@ Example usage:
     from frameflow.pyspark.pipeline import run_pipeline
 """
 
-__version__ = "1.0.0"
+__version__ = "1.5.0"
 __author__ = "Stephen Chen"
 __license__ = "MIT"
 

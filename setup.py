@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="frameflow",
-    version="1.0.0",
+    version="1.5.0",
     author="Stephen Chen",
     author_email="your.email@example.com",
     description="Unified data transformation framework for Polars and PySpark",

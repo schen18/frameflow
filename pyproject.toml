@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "frameflow"
-version = "1.0.0"
+version = "1.5.0"
 description = "Unified data transformation framework for Polars and PySpark"
 readme = "README.md"
 requires-python = ">=3.8"

@@ -157,6 +157,170 @@ parq_write(df, 'gs://my-bucket/output.parquet')
 }
 ```
 
+# Version 1.5.0
+Updated pipeline modules to accept DataFrames directly as input. Here's what changed and how to use it:
+
+## Key Changes:
+
+### 1. **Accept DataFrame/LazyFrame as Input**
+
+Both pipeline classes now accept:
+
+- File paths (string)
+- File configuration (dict)
+- **DataFrame/LazyFrame objects directly** ← NEW!
+
+### 2. **Flexible Validation**
+
+If you pass a DataFrame as input, the `steps` field becomes optional (defaults to empty list).
+
+## Usage Examples:
+
+### **Polars - Transform Existing DataFrame**
+
+python
+
+```python
+import polars as pl
+from dataops.polars.pipeline import run_pipeline
+
+# Create or load a DataFrame
+df = pl.DataFrame({
+    'customer_id': [1, 1, 2, 2, 3],
+    'amount': [100, 200, 150, None, 300],
+    'date': ['2024-01-01', '2024-01-02', '2024-01-01', '2024-01-02', '2024-01-01']
+})
+
+# Define transformations using JSON spec
+spec = {
+    'input': df,  # Pass DataFrame directly!
+    'steps': [
+        {
+            'operation': 'cols_fillna',
+            'params': {'cols': 'amount', 'strategy': 'zero'}
+        },
+        {
+            'operation': 'cols_todate',
+            'params': {'cols': 'date'}
+        },
+        {
+            'operation': 'df_filter',
+            'params': {'condition': "col('amount') > 0"}
+        },
+        {
+            'operation': 'cols_collect_to_array',
+            'params': {
+                'group_by': 'customer_id',
+                'collect_cols': {
+                    'date': 'all_dates',
+                    'amount': 'all_amounts'
+                }
+            }
+        }
+    ],
+    'output': 'output.parquet'  # Optional
+}
+
+# Execute pipeline
+result = run_pipeline(spec, return_df=True)
+print(result)
+```
+
+### **PySpark - Transform Existing DataFrame**
+
+python
+
+```python
+from pyspark.sql import SparkSession
+from dataops.pyspark.pipeline import run_pipeline
+
+spark = SparkSession.builder.appName("myapp").getOrCreate()
+
+# Create or load a DataFrame
+df = spark.createDataFrame([
+    (1, 100, '2024-01-01'),
+    (1, 200, '2024-01-02'),
+    (2, 150, '2024-01-01'),
+    (2, None, '2024-01-02'),
+    (3, 300, '2024-01-01')
+], ['customer_id', 'amount', 'date'])
+
+# Define transformations using JSON spec
+spec = {
+    'input': df,  # Pass DataFrame directly!
+    'steps': [
+        {
+            'operation': 'cols_fillna',
+            'params': {'cols': 'amount', 'strategy': 'zero'}
+        },
+        {
+            'operation': 'cols_todate',
+            'params': {'cols': 'date', 'format': 'yyyy-MM-dd'}
+        },
+        {
+            'operation': 'df_filter',
+            'params': {'condition': "col('amount') > 0"}
+        },
+        {
+            'operation': 'cols_collect_to_array',
+            'params': {
+                'group_by': 'customer_id',
+                'collect_cols': {
+                    'date': 'all_dates',
+                    'amount': 'all_amounts'
+                }
+            }
+        }
+    ]
+}
+
+# Execute pipeline
+result = run_pipeline(spec, return_df=True)
+result.show()
+```
+
+## Benefits:
+
+✅ **Reuse transformation specs** - Same JSON for file-based or in-memory data  
+✅ **Consistent transformations** - Guarantee same logic across sources  
+✅ **Mix and match** - Load from file, transform, pass to another pipeline  
+✅ **Testing friendly** - Easy to test transformations on sample DataFrames  
+✅ **Composable** - Chain multiple pipelines together
+
+## Example: Chaining Pipelines
+
+python
+
+```python
+# Pipeline 1: Load and clean
+spec1 = {
+    'input': 'raw_data.csv',
+    'steps': [
+        {'operation': 'cols_fillna', 'params': {'cols': 'amount', 'strategy': 'zero'}},
+        {'operation': 'cols_todate', 'params': {'cols': 'date'}}
+    ]
+}
+df_clean = run_pipeline(spec1, return_df=True)
+
+# Pipeline 2: Aggregate (reuse spec for consistency)
+spec2 = {
+    'input': df_clean,  # Use output from previous pipeline
+    'steps': [
+        {
+            'operation': 'cols_collect_to_array',
+            'params': {
+                'group_by': 'customer_id',
+                'collect_cols': {'date': 'dates', 'amount': 'amounts'}
+            }
+        }
+    ],
+    'output': 'aggregated.parquet'
+}
+run_pipeline(spec2)
+```
+
+Now JSON specs work identically whether data comes from files or DataFrames!
+
 ## Documentation
 
 Full documentation available at: https://github.com/schen18/frameflow

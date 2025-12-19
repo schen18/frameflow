@@ -5,8 +5,8 @@ This module enables declarative data transformations using JSON specifications
 with a consistent API to the Polars pipeline module. Provides expression parsing
 to use col('name') instead of F.col('name') in JSON specs.
 
-Author: Claude
-Version: 1.0.0
+Author: Stephen Chen
+Version: 1.5.0
 """
 
 import json
@@ -572,15 +572,23 @@ class PySparkPipeline:
         if 'input' not in self.spec:
             raise ValueError("Specification must contain 'input' field")
         
-        if 'steps' not in self.spec:
+        # Allow DataFrame as input (no 'steps' required in this case)
+        if isinstance(self.spec['input'], DataFrame):
+            if 'steps' not in self.spec:
+                self.spec['steps'] = []  # Empty steps list is valid
+        elif 'steps' not in self.spec:
             raise ValueError("Specification must contain 'steps' field")
         
-        if not isinstance(self.spec['steps'], list):
+        if not isinstance(self.spec.get('steps', []), list):
             raise ValueError("'steps' must be a list")
     
     def _load_input(self) -> DataFrame:
         """Load input data based on specification."""
         input_config = self.spec['input']
+        
+        # Check if input is a DataFrame object
+        if isinstance(input_config, DataFrame):
+            return input_config
         
         if isinstance(input_config, str):
             # Simple path string - infer format from extension
@@ -610,7 +618,7 @@ class PySparkPipeline:
                 raise ValueError(f"Unsupported format: {format_type}")
         
         else:
-            raise ValueError("'input' must be a string path or dict configuration")
+            raise ValueError("'input' must be a string path, dict configuration, or DataFrame")
     
     def _infer_format(self, path: str) -> str:
         """Infer file format from path extension."""
@@ -827,7 +835,7 @@ def run_pipeline(spec: Union[Dict, str, Path], return_df: bool = False) -> Optio
         # From file
         run_pipeline('pipeline.json')
         
-        # From dict
+        # From dict with file path
         spec = {
             'input': 'data.csv',
             'steps': [
@@ -837,6 +845,16 @@ def run_pipeline(spec: Union[Dict, str, Path], return_df: bool = False) -> Optio
             'output': 'output.parquet'
         }
         run_pipeline(spec)
+        
+        # From dict with DataFrame input
+        df = spark.createDataFrame([(1, 4), (2, 5), (3, 6)], ['a', 'b'])
+        spec = {
+            'input': df,
+            'steps': [
+                {'operation': 'cols_drop', 'params': {'cols': 'b'}}
+            ]
+        }
+        result = run_pipeline(spec, return_df=True)
     """
     pipeline = PySparkPipeline(spec)
     return pipeline.execute(return_df=return_df)

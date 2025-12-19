@@ -11,7 +11,7 @@ GCS Support:
     - Pass storage_options with credentials, OR
     - Use gcloud CLI authentication
 
-Author: Claude
+Author: Stephen Chen
 Version: 1.1.0
 """
 

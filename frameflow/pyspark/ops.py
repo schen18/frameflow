@@ -15,7 +15,7 @@ GCS Support:
         .config("google.cloud.auth.service.account.json.keyfile", "/path/to/key.json") \
         .getOrCreate()
 
-Author: Claude
+Author: Stephen Chen
 Version: 1.0.0
 """
 
